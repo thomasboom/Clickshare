@@ -3,7 +3,8 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { getSupabaseClient } from '@/lib/supabase'
-import { Upload, Save } from 'lucide-react'
+import { Upload, ArrowLeft, Plus } from 'lucide-react'
+import Link from 'next/link'
 
 export default function CreateCard() {
   const router = useRouter()
@@ -21,7 +22,6 @@ export default function CreateCard() {
     twitter: '',
     github: '',
     instagram: '',
-    primary_color: '#3b82f6',
   })
   const [profileImage, setProfileImage] = useState<File | null>(null)
   const [previewImage, setPreviewImage] = useState<string | null>(null)
@@ -39,7 +39,7 @@ export default function CreateCard() {
     setLoading(true)
 
     const supabase = getSupabaseClient()
-    
+
     if (!supabase) {
       alert('Please configure Supabase environment variables')
       setLoading(false)
@@ -84,9 +84,7 @@ export default function CreateCard() {
               github: formData.github || undefined,
               instagram: formData.instagram || undefined,
             },
-            custom_theme: {
-              primary_color: formData.primary_color,
-            },
+            custom_theme: {},
             visits: 0,
             qr_code_scans: 0,
           },
@@ -106,25 +104,33 @@ export default function CreateCard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4">
+    <div className="min-h-screen py-12 px-4">
       <div className="max-w-2xl mx-auto">
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">
-            Create Your Digital Card
-          </h1>
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 text-sm mono text-foreground/40 hover:text-foreground transition-colors mb-8"
+        >
+          <span className="w-8 h-8 border border-foreground/20 flex items-center justify-center">←</span>
+          <span>BACK</span>
+        </Link>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="flex items-center gap-6">
-              <div className="relative">
-                <div className="w-32 h-32 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+        <div className="border-2 border-foreground bg-card">
+          <div className="p-6 border-b-2 border-foreground">
+            <div className="display-text">NEW CARD</div>
+          </div>
+
+          <form onSubmit={handleSubmit} className="p-6 space-y-8">
+            <div className="flex flex-col items-center">
+              <div className="relative mb-4">
+                <div className="w-28 h-28 rounded-full overflow-hidden bg-foreground/5 border-2 border-foreground flex items-center justify-center">
                   {previewImage ? (
                     <img src={previewImage} alt="Preview" className="w-full h-full object-cover" />
                   ) : (
-                    <span className="text-4xl font-bold text-gray-400">?</span>
+                    <span className="text-5xl font-black text-foreground/20">?</span>
                   )}
                 </div>
-                <label className="absolute bottom-0 right-0 w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center cursor-pointer hover:bg-blue-700 transition-colors">
-                  <Upload className="h-5 w-5 text-white" />
+                <label className="absolute bottom-0 right-0 w-10 h-10 bg-accent rounded-full flex items-center justify-center cursor-pointer hover:opacity-90 border-2 border-foreground">
+                  <Upload className="w-4 h-4 text-foreground" />
                   <input
                     type="file"
                     accept="image/*"
@@ -133,170 +139,155 @@ export default function CreateCard() {
                   />
                 </label>
               </div>
-              <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Slug (URL path)
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.slug}
-                  onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                  placeholder="your-name"
-                  className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                  Your card will be at: clickshare.vercel.app/{formData.slug || 'your-name'}
-                </p>
+
+              <div className="w-full">
+                <label className="block mono text-xs text-foreground/40 mb-2">YOUR LINK</label>
+                <div className="flex items-center bg-foreground/5 border-2 border-foreground">
+                  <span className="px-4 py-3 font-mono text-sm text-foreground/40">/</span>
+                  <input
+                    type="text"
+                    required
+                    value={formData.slug}
+                    onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                    placeholder="your-name"
+                    className="flex-1 px-2 py-3 bg-transparent font-mono text-sm focus:outline-none"
+                  />
+                </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Full Name
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.full_name}
-                  onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                  className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="block font-bold text-sm">NAME</label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.full_name}
+                    onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                    className="w-full px-4 py-4 bg-foreground/5 border-2 border-foreground focus:bg-foreground/10 focus:outline-none transition-colors font-medium"
+                    placeholder="YOUR NAME"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block font-bold text-sm">TITLE</label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.job_title}
+                    onChange={(e) => setFormData({ ...formData, job_title: e.target.value })}
+                    className="w-full px-4 py-4 bg-foreground/5 border-2 border-foreground focus:bg-foreground/10 focus:outline-none transition-colors font-medium"
+                    placeholder="WHAT YOU DO"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block font-bold text-sm">COMPANY</label>
+                  <input
+                    type="text"
+                    value={formData.company}
+                    onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                    className="w-full px-4 py-4 bg-foreground/5 border-2 border-foreground focus:bg-foreground/10 focus:outline-none transition-colors font-medium"
+                    placeholder="WHERE YOU WORK"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block font-bold text-sm">EMAIL</label>
+                  <input
+                    type="email"
+                    required
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className="w-full px-4 py-4 bg-foreground/5 border-2 border-foreground focus:bg-foreground/10 focus:outline-none transition-colors font-medium"
+                    placeholder="EMAIL@EXAMPLE.COM"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block font-bold text-sm">PHONE</label>
+                  <input
+                    type="tel"
+                    required
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    className="w-full px-4 py-4 bg-foreground/5 border-2 border-foreground focus:bg-foreground/10 focus:outline-none transition-colors font-medium"
+                    placeholder="+1 555 000 0000"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block font-bold text-sm">WEBSITE</label>
+                  <input
+                    type="url"
+                    value={formData.website}
+                    onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+                    className="w-full px-4 py-4 bg-foreground/5 border-2 border-foreground focus:bg-foreground/10 focus:outline-none transition-colors font-medium"
+                    placeholder="HTTPS://YOURSITE.COM"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="block font-bold text-sm">ABOUT</label>
+                <textarea
+                  rows={3}
+                  value={formData.bio}
+                  onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                  className="w-full px-4 py-4 bg-foreground/5 border-2 border-foreground focus:bg-foreground/10 focus:outline-none transition-colors resize-none font-medium"
+                  placeholder="TELL PEOPLE ABOUT YOURSELF..."
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Job Title
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.job_title}
-                  onChange={(e) => setFormData({ ...formData, job_title: e.target.value })}
-                  className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+              <div className="space-y-3">
+                <label className="block font-bold text-sm">LINKS</label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <input
+                    type="url"
+                    placeholder="LINKEDIN"
+                    value={formData.linkedin}
+                    onChange={(e) => setFormData({ ...formData, linkedin: e.target.value })}
+                    className="w-full px-4 py-3 bg-foreground/5 border-2 border-foreground focus:bg-foreground/10 focus:outline-none transition-colors font-mono text-sm"
+                  />
+                  <input
+                    type="url"
+                    placeholder="TWITTER"
+                    value={formData.twitter}
+                    onChange={(e) => setFormData({ ...formData, twitter: e.target.value })}
+                    className="w-full px-4 py-3 bg-foreground/5 border-2 border-foreground focus:bg-foreground/10 focus:outline-none transition-colors font-mono text-sm"
+                  />
+                  <input
+                    type="url"
+                    placeholder="GITHUB"
+                    value={formData.github}
+                    onChange={(e) => setFormData({ ...formData, github: e.target.value })}
+                    className="w-full px-4 py-3 bg-foreground/5 border-2 border-foreground focus:bg-foreground/10 focus:outline-none transition-colors font-mono text-sm"
+                  />
+                  <input
+                    type="url"
+                    placeholder="INSTAGRAM"
+                    value={formData.instagram}
+                    onChange={(e) => setFormData({ ...formData, instagram: e.target.value })}
+                    className="w-full px-4 py-3 bg-foreground/5 border-2 border-foreground focus:bg-foreground/10 focus:outline-none transition-colors font-mono text-sm"
+                  />
+                </div>
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Company
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.company}
-                  onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                  className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  required
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Phone
-                </label>
-                <input
-                  type="tel"
-                  required
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Website
-                </label>
-                <input
-                  type="url"
-                  value={formData.website}
-                  onChange={(e) => setFormData({ ...formData, website: e.target.value })}
-                  className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Bio
-              </label>
-              <textarea
-                rows={3}
-                value={formData.bio}
-                onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Social Links
-              </label>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input
-                  type="url"
-                  placeholder="LinkedIn"
-                  value={formData.linkedin}
-                  onChange={(e) => setFormData({ ...formData, linkedin: e.target.value })}
-                  className="px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <input
-                  type="url"
-                  placeholder="Twitter"
-                  value={formData.twitter}
-                  onChange={(e) => setFormData({ ...formData, twitter: e.target.value })}
-                  className="px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <input
-                  type="url"
-                  placeholder="GitHub"
-                  value={formData.github}
-                  onChange={(e) => setFormData({ ...formData, github: e.target.value })}
-                  className="px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <input
-                  type="url"
-                  placeholder="Instagram"
-                  value={formData.instagram}
-                  onChange={(e) => setFormData({ ...formData, instagram: e.target.value })}
-                  className="px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Primary Color
-              </label>
-              <input
-                type="color"
-                value={formData.primary_color}
-                onChange={(e) => setFormData({ ...formData, primary_color: e.target.value })}
-                className="w-full h-12 rounded-lg cursor-pointer"
-              />
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex items-center justify-center gap-2 px-6 py-4 rounded-lg font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
+              className="w-full flex items-center justify-center gap-2 px-6 py-5 bg-foreground text-background font-bold text-lg hover:bg-accent hover:text-foreground transition-colors"
             >
-              <Save className="h-5 w-5" />
-              {loading ? 'Creating...' : 'Create Card'}
+              {loading ? (
+                <span className="mono">CREATING...</span>
+              ) : (
+                <>
+                  <Plus className="w-5 h-5" />
+                  <span>CREATE CARD</span>
+                </>
+              )}
             </button>
           </form>
         </div>
