@@ -14,6 +14,11 @@ export interface Profile {
     twitter?: string
     github?: string
     instagram?: string
+    mastodon?: string
+    bluesky?: string
+    whatsapp?: string
+    signal?: string
+    telegram?: string
   }
   custom_theme: {
     primary_color?: string
@@ -22,4 +27,5 @@ export interface Profile {
   slug: string
   qr_code_scans: number
   visits: number
+  edit_token?: string
 }

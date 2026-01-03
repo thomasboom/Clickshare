@@ -1,14 +1,19 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { getSupabaseClient } from '@/lib/supabase'
-import { Upload, ArrowLeft, Plus } from 'lucide-react'
+import { Upload, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 
-export default function CreateCard() {
+export default function EditCard() {
   const router = useRouter()
-  const [loading, setLoading] = useState(false)
+  const searchParams = useSearchParams()
+  const token = searchParams.get('token')
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [profile, setProfile] = useState<any>(null)
   const [formData, setFormData] = useState({
     full_name: '',
     job_title: '',
@@ -17,7 +22,6 @@ export default function CreateCard() {
     email: '',
     phone: '',
     website: '',
-    slug: '',
     linkedin: '',
     twitter: '',
     github: '',
@@ -31,6 +35,60 @@ export default function CreateCard() {
   const [profileImage, setProfileImage] = useState<File | null>(null)
   const [previewImage, setPreviewImage] = useState<string | null>(null)
 
+  useEffect(() => {
+    async function fetchProfile() {
+      const supabase = getSupabaseClient()
+
+      if (!supabase) {
+        setError('Please configure Supabase environment variables')
+        setLoading(false)
+        return
+      }
+
+      if (!token) {
+        setError('Invalid edit link')
+        setLoading(false)
+        return
+      }
+
+      const { data } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('edit_token', token)
+        .single()
+
+      if (!data) {
+        setError('Profile not found or invalid edit link')
+        setLoading(false)
+        return
+      }
+
+      setProfile(data)
+      setFormData({
+        full_name: data.full_name,
+        job_title: data.job_title,
+        company: data.company,
+        bio: data.bio,
+        email: data.email,
+        phone: data.phone,
+        website: data.website || '',
+        linkedin: data.social_links?.linkedin || '',
+        twitter: data.social_links?.twitter || '',
+        github: data.social_links?.github || '',
+        instagram: data.social_links?.instagram || '',
+        mastodon: data.social_links?.mastodon || '',
+        bluesky: data.social_links?.bluesky || '',
+        whatsapp: data.social_links?.whatsapp || '',
+        signal: data.social_links?.signal || '',
+        telegram: data.social_links?.telegram || '',
+      })
+      setPreviewImage(data.profile_image)
+      setLoading(false)
+    }
+
+    fetchProfile()
+  }, [token])
+
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
@@ -39,29 +97,20 @@ export default function CreateCard() {
     }
   }
 
-  const generateEditToken = () => {
-    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-    let token = ''
-    for (let i = 0; i < 32; i++) {
-      token += chars.charAt(Math.floor(Math.random() * chars.length))
-    }
-    return token
-  }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setLoading(true)
+    setSaving(true)
 
     const supabase = getSupabaseClient()
 
     if (!supabase) {
       alert('Please configure Supabase environment variables')
-      setLoading(false)
+      setSaving(false)
       return
     }
 
     try {
-      let imageUrl = null
+      let imageUrl = profile?.profile_image
 
       if (profileImage) {
         const fileExt = profileImage.name.split('.').pop()
@@ -79,57 +128,72 @@ export default function CreateCard() {
         imageUrl = publicUrl
       }
 
-      const editToken = generateEditToken()
-
-      const { error: insertError } = await supabase
+      const { error: updateError } = await supabase
         .from('profiles')
-        .insert([
-          {
-            full_name: formData.full_name,
-            job_title: formData.job_title,
-            company: formData.company,
-            bio: formData.bio,
-            email: formData.email,
-            phone: formData.phone,
-            website: formData.website || null,
-            slug: formData.slug.toLowerCase().replace(/\s+/g, '-'),
-            profile_image: imageUrl,
-            social_links: {
-              linkedin: formData.linkedin || undefined,
-              twitter: formData.twitter || undefined,
-              github: formData.github || undefined,
-              instagram: formData.instagram || undefined,
-              mastodon: formData.mastodon || undefined,
-              bluesky: formData.bluesky || undefined,
-              whatsapp: formData.whatsapp || undefined,
-              signal: formData.signal || undefined,
-              telegram: formData.telegram || undefined,
-            },
-            custom_theme: {},
-            visits: 0,
-            qr_code_scans: 0,
-            edit_token: editToken,
+        .update({
+          full_name: formData.full_name,
+          job_title: formData.job_title,
+          company: formData.company,
+          bio: formData.bio,
+          email: formData.email,
+          phone: formData.phone,
+          website: formData.website || null,
+          profile_image: imageUrl,
+          social_links: {
+            linkedin: formData.linkedin || undefined,
+            twitter: formData.twitter || undefined,
+            github: formData.github || undefined,
+            instagram: formData.instagram || undefined,
+            mastodon: formData.mastodon || undefined,
+            bluesky: formData.bluesky || undefined,
+            whatsapp: formData.whatsapp || undefined,
+            signal: formData.signal || undefined,
+            telegram: formData.telegram || undefined,
           },
-        ])
-        .select()
-        .single()
+        })
+        .eq('id', profile.id)
 
-      if (insertError) throw insertError
+      if (updateError) throw updateError
 
-      router.push(`/${formData.slug}?edit_token=${editToken}`)
+      router.push(`/${profile.slug}`)
     } catch (error) {
-      console.error('Error creating profile:', error)
-      alert('Error creating profile. Please try again.')
+      console.error('Error updating profile:', error)
+      alert('Error updating profile. Please try again.')
     } finally {
-      setLoading(false)
+      setSaving(false)
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="mono text-sm text-foreground/40">loading...</div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background px-6">
+        <div className="text-center">
+          <div className="display-text mb-4">ERROR</div>
+          <p className="body-text text-foreground/50 mb-8">{error}</p>
+          <Link
+            href="/"
+            className="inline-block px-8 py-3 bg-foreground text-background font-bold text-sm"
+          >
+            GO HOME
+          </Link>
+        </div>
+      </div>
+    )
   }
 
   return (
     <div className="min-h-screen py-12 px-4">
       <div className="max-w-2xl mx-auto">
         <Link
-          href="/"
+          href={`/${profile.slug}`}
           className="inline-flex items-center gap-2 text-sm mono text-foreground/40 hover:text-foreground transition-colors mb-8"
         >
           <span className="w-8 h-8 border border-foreground/20 flex items-center justify-center">←</span>
@@ -138,7 +202,7 @@ export default function CreateCard() {
 
         <div className="border-2 border-foreground bg-card">
           <div className="p-6 border-b-2 border-foreground">
-            <div className="display-text">NEW CARD</div>
+            <div className="display-text">EDIT CARD</div>
           </div>
 
           <form onSubmit={handleSubmit} className="p-6 space-y-8">
@@ -168,11 +232,9 @@ export default function CreateCard() {
                   <span className="px-4 py-3 font-mono text-sm text-foreground/40">/</span>
                   <input
                     type="text"
-                    required
-                    value={formData.slug}
-                    onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                    placeholder="your-name"
-                    className="flex-1 px-2 py-3 bg-transparent font-mono text-sm focus:outline-none"
+                    value={profile.slug}
+                    disabled
+                    className="flex-1 px-2 py-3 bg-transparent font-mono text-sm focus:outline-none opacity-50"
                   />
                 </div>
               </div>
@@ -334,16 +396,13 @@ export default function CreateCard() {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={saving}
               className="w-full flex items-center justify-center gap-2 px-6 py-5 bg-foreground text-background font-bold text-lg hover:bg-accent hover:text-foreground transition-colors"
             >
-              {loading ? (
-                <span className="mono">CREATING...</span>
+              {saving ? (
+                <span className="mono">SAVING...</span>
               ) : (
-                <>
-                  <Plus className="w-5 h-5" />
-                  <span>CREATE CARD</span>
-                </>
+                <span>SAVE CHANGES</span>
               )}
             </button>
           </form>

@@ -2,17 +2,20 @@
 
 import { useEffect, useState } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
-import { Mail, Phone, Globe, Linkedin, Twitter, Github, Instagram, Download, Share2 } from 'lucide-react'
+import { Mail, Phone, Globe, Linkedin, Twitter, Github, Instagram, Download, Share2, Edit, Lock, MessageCircle, Send, MessageSquare } from 'lucide-react'
 import { getSupabaseClient } from '@/lib/supabase'
 import { Profile } from '@/types'
-import { useParams } from 'next/navigation'
+import { useParams, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
 export default function BusinessCard() {
   const params = useParams()
+  const searchParams = useSearchParams()
+  const editToken = searchParams.get('edit_token')
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
   const [showQR, setShowQR] = useState(false)
+  const [editLinkCopied, setEditLinkCopied] = useState(false)
   const slug = params.slug as string
 
   useEffect(() => {
@@ -46,6 +49,14 @@ export default function BusinessCard() {
       fetchProfile()
     }
   }, [slug])
+
+  const copyEditLink = () => {
+    if (!profile?.edit_token) return
+    const editLink = `${window.location.origin}/edit?token=${profile.edit_token}`
+    navigator.clipboard.writeText(editLink)
+    setEditLinkCopied(true)
+    setTimeout(() => setEditLinkCopied(false), 2000)
+  }
 
   const downloadVCard = () => {
     if (!profile) return
@@ -182,8 +193,8 @@ END:VCARD`
               )}
             </div>
 
-            {(socialLinks.linkedin || socialLinks.twitter || socialLinks.github || socialLinks.instagram) && (
-              <div className="flex gap-2 mt-6">
+            {(socialLinks.linkedin || socialLinks.twitter || socialLinks.github || socialLinks.instagram || socialLinks.mastodon || socialLinks.bluesky || socialLinks.whatsapp || socialLinks.signal || socialLinks.telegram) && (
+              <div className="flex gap-2 mt-6 flex-wrap">
                 {socialLinks.linkedin && (
                   <a
                     href={socialLinks.linkedin}
@@ -224,6 +235,61 @@ END:VCARD`
                     <Instagram className="w-5 h-5" />
                   </a>
                 )}
+                {socialLinks.mastodon && (
+                  <a
+                    href={socialLinks.mastodon}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-12 h-12 flex items-center justify-center bg-foreground text-background hover:bg-accent hover:text-foreground transition-colors"
+                    title="Mastodon"
+                  >
+                    <MessageCircle className="w-5 h-5" />
+                  </a>
+                )}
+                {socialLinks.bluesky && (
+                  <a
+                    href={socialLinks.bluesky}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-12 h-12 flex items-center justify-center bg-foreground text-background hover:bg-accent hover:text-foreground transition-colors"
+                    title="Bluesky"
+                  >
+                    <Globe className="w-5 h-5" />
+                  </a>
+                )}
+                {socialLinks.whatsapp && (
+                  <a
+                    href={socialLinks.whatsapp}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-12 h-12 flex items-center justify-center bg-foreground text-background hover:bg-accent hover:text-foreground transition-colors"
+                    title="WhatsApp"
+                  >
+                    <MessageSquare className="w-5 h-5" />
+                  </a>
+                )}
+                {socialLinks.signal && (
+                  <a
+                    href={socialLinks.signal}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-12 h-12 flex items-center justify-center bg-foreground text-background hover:bg-accent hover:text-foreground transition-colors"
+                    title="Signal"
+                  >
+                    <MessageCircle className="w-5 h-5" />
+                  </a>
+                )}
+                {socialLinks.telegram && (
+                  <a
+                    href={socialLinks.telegram}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-12 h-12 flex items-center justify-center bg-foreground text-background hover:bg-accent hover:text-foreground transition-colors"
+                    title="Telegram"
+                  >
+                    <Send className="w-5 h-5" />
+                  </a>
+                )}
               </div>
             )}
 
@@ -248,6 +314,35 @@ END:VCARD`
                 QR
               </button>
             </div>
+
+            {editToken && (
+              <div className="mt-6 p-4 bg-accent/10 border-2 border-accent">
+                <div className="flex items-center gap-2 mb-3">
+                  <Lock className="w-4 h-4 text-foreground" />
+                  <span className="font-bold text-sm">YOUR SECRET EDIT LINK</span>
+                </div>
+                <p className="text-xs text-foreground/70 mb-3 mono">
+                  {`${window.location.origin}/edit?token=${editToken}`}
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={copyEditLink}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-accent text-foreground font-bold hover:opacity-90 transition-opacity text-sm"
+                  >
+                    {editLinkCopied ? 'COPIED!' : 'COPY LINK'}
+                  </button>
+                  <Link
+                    href={`/edit?token=${editToken}`}
+                    className="flex items-center justify-center px-4 py-3 bg-foreground text-background font-bold hover:bg-accent hover:text-foreground transition-colors text-sm"
+                  >
+                    <Edit className="w-4 h-4" />
+                  </Link>
+                </div>
+                <p className="text-xs text-foreground/50 mt-3">
+                  Save this link to edit your profile later
+                </p>
+              </div>
+            )}
 
             {showQR && (
               <div className="mt-6 p-4 bg-background border-2 border-foreground">
