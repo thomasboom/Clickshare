@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
-import { Mail, Phone, Globe, Linkedin, Twitter, Github, Instagram, Download, Share2, Edit, Lock, MessageCircle, Send, MessageSquare } from 'lucide-react'
+import { Mail, Phone, Globe, Linkedin, Twitter, Github, Instagram, Download, Share2, Edit, Lock, MessageCircle, Send, MessageSquare, Users } from 'lucide-react'
 import { getSupabaseClient } from '@/lib/supabase'
 import { Profile } from '@/types'
 import { useParams, useSearchParams } from 'next/navigation'
@@ -250,7 +250,7 @@ END:VCARD`
                   rel="noopener noreferrer"
                   className="flex items-center gap-3 md:gap-4 p-3 md:p-4 bg-foreground/5 hover:bg-foreground/10 transition-colors rounded-lg touch-manipulation"
                 >
-                  <MessageCircle className="w-5 h-5 flex-shrink-0" />
+                  <Users className="w-5 h-5 flex-shrink-0" />
                   <span className="font-medium text-sm md:text-base">Mastodon</span>
                 </a>
               )}
@@ -261,7 +261,7 @@ END:VCARD`
                   rel="noopener noreferrer"
                   className="flex items-center gap-3 md:gap-4 p-3 md:p-4 bg-foreground/5 hover:bg-foreground/10 transition-colors rounded-lg touch-manipulation"
                 >
-                  <Globe className="w-5 h-5 flex-shrink-0" />
+                  <MessageCircle className="w-5 h-5 flex-shrink-0" />
                   <span className="font-medium text-sm md:text-base">Bluesky</span>
                 </a>
               )}
@@ -272,7 +272,7 @@ END:VCARD`
                   rel="noopener noreferrer"
                   className="flex items-center gap-3 md:gap-4 p-3 md:p-4 bg-foreground/5 hover:bg-foreground/10 transition-colors rounded-lg touch-manipulation"
                 >
-                  <MessageSquare className="w-5 h-5 flex-shrink-0" />
+                  <Phone className="w-5 h-5 flex-shrink-0" />
                   <span className="font-medium text-sm md:text-base">WhatsApp</span>
                 </a>
               )}
@@ -283,7 +283,7 @@ END:VCARD`
                   rel="noopener noreferrer"
                   className="flex items-center gap-3 md:gap-4 p-3 md:p-4 bg-foreground/5 hover:bg-foreground/10 transition-colors rounded-lg touch-manipulation"
                 >
-                  <Send className="w-5 h-5 flex-shrink-0" />
+                  <MessageSquare className="w-5 h-5 flex-shrink-0" />
                   <span className="font-medium text-sm md:text-base">Signal</span>
                 </a>
               )}
