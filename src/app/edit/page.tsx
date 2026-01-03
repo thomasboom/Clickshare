@@ -1,12 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { getSupabaseClient } from '@/lib/supabase'
 import { Upload, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 
-export default function EditCard() {
+function EditCardContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const token = searchParams.get('token')
@@ -409,5 +409,17 @@ export default function EditCard() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function EditCard() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="mono text-sm text-foreground/40">loading...</div>
+      </div>
+    }>
+      <EditCardContent />
+    </Suspense>
   )
 }
