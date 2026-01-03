@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
-import { Mail, Phone, Globe, Linkedin, Twitter, Github, Instagram, Download, Share2, Edit, Lock, MessageCircle, Send, MessageSquare, Users } from 'lucide-react'
+import { Mail, Phone, Globe, Linkedin, Twitter, Github, Instagram, Download, Share2, Edit, Lock, MessageCircle, Send, MessageSquare, Users, QrCode } from 'lucide-react'
 import { getSupabaseClient } from '@/lib/supabase'
 import { Profile } from '@/types'
 import { useParams, useSearchParams } from 'next/navigation'
@@ -16,13 +16,12 @@ export default function BusinessCard() {
   const [loading, setLoading] = useState(true)
   const [showQR, setShowQR] = useState(false)
   const [editLinkCopied, setEditLinkCopied] = useState(false)
+  const [shareLinkCopied, setShareLinkCopied] = useState(false)
   const [origin, setOrigin] = useState('')
-  const [currentUrl, setCurrentUrl] = useState('')
   const slug = params.slug as string
 
   useEffect(() => {
     setOrigin(window.location.origin)
-    setCurrentUrl(window.location.href)
   }, [])
 
   useEffect(() => {
@@ -88,18 +87,11 @@ END:VCARD`
     URL.revokeObjectURL(url)
   }
 
-  const shareCard = async () => {
-    if (navigator.share && profile) {
-      try {
-        await navigator.share({
-          title: `${profile.full_name}'s Digital Card`,
-          text: `Check out ${profile.full_name}'s digital business card!`,
-          url: window.location.href,
-        })
-      } catch (err) {
-        console.log('Share failed:', err)
-      }
-    }
+  const shareCard = () => {
+    const cleanUrl = `${origin}/${slug}`
+    navigator.clipboard.writeText(cleanUrl)
+    setShareLinkCopied(true)
+    setTimeout(() => setShareLinkCopied(false), 2000)
   }
 
   if (loading) {
@@ -302,23 +294,23 @@ END:VCARD`
 
             <div className="flex gap-2 mt-4 md:mt-6">
               <button
-                onClick={downloadVCard}
+                onClick={shareCard}
                 className="flex-1 flex items-center justify-center gap-2 px-4 py-4 md:px-4 md:py-4 bg-foreground text-background font-bold text-sm hover:bg-accent hover:text-foreground transition-colors"
               >
-                <Download className="w-4 h-4" />
-                <span>SAVE</span>
+                <Share2 className="w-4 h-4" />
+                <span>{shareLinkCopied ? 'COPIED!' : 'SHARE'}</span>
               </button>
               <button
-                onClick={shareCard}
+                onClick={downloadVCard}
                 className="px-4 py-4 md:px-5 md:py-4 bg-foreground/10 font-bold hover:bg-foreground hover:text-background transition-colors"
               >
-                <Share2 className="w-4 h-4" />
+                <Download className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setShowQR(!showQR)}
                 className={`px-4 py-4 md:px-5 md:py-4 font-bold transition-colors ${showQR ? 'bg-accent text-foreground' : 'bg-foreground/10 hover:bg-foreground hover:text-background'}`}
               >
-                QR
+                <QrCode className="w-4 h-4" />
               </button>
             </div>
 
@@ -352,16 +344,24 @@ END:VCARD`
             )}
 
             {showQR && (
-              <div className="mt-4 md:mt-6 p-3 md:p-4 bg-background border-2 border-foreground rounded-lg">
-                <div className="flex justify-center p-3 md:p-4 bg-white rounded-lg">
-                  <QRCodeSVG
-                    value={currentUrl}
-                    size={Math.min(180, window.innerWidth - 60)}
-                    level="H"
-                    includeMargin
-                  />
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" onClick={() => setShowQR(false)}>
+                <div className="bg-background border-2 border-foreground rounded-lg p-4 md:p-6 max-w-sm w-full" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    onClick={() => setShowQR(false)}
+                    className="absolute top-2 right-2 w-8 h-8 flex items-center justify-center text-foreground/60 hover:text-foreground"
+                  >
+                    ×
+                  </button>
+                  <div className="flex justify-center p-4 md:p-6 bg-white rounded-lg">
+                    <QRCodeSVG
+                      value={`${origin}/${slug}`}
+                      size={Math.min(200, window.innerWidth - 80)}
+                      level="H"
+                      includeMargin
+                    />
+                  </div>
+                  <p className="text-center mono text-xs mt-4 text-foreground/40">SCAN TO SAVE</p>
                 </div>
-                <p className="text-center mono text-xs mt-3 text-foreground/40">SCAN TO SAVE</p>
               </div>
             )}
           </div>
