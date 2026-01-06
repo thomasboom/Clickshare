@@ -24,7 +24,7 @@ export default function Home() {
     <div className="min-h-screen flex flex-col">
       <header className="flex justify-between items-center p-4 md:p-6 border-b-2 border-foreground">
         <div className="w-10 h-10 bg-foreground text-background flex items-center justify-center font-bold mono rounded-full">
-          CS
+          F
         </div>
         <button
           onClick={() => router.push('/create')}
@@ -78,7 +78,7 @@ export default function Home() {
 
       <footer className="border-t-2 border-foreground p-4 md:p-6">
         <div className="flex justify-between items-center max-w-6xl mx-auto">
-          <p className="mono text-xs md:text-sm text-foreground/40">MADE WITH CLICKSHARE</p>
+          <p className="mono text-xs md:text-sm text-foreground/40">MADE WITH FLICK</p>
           <p className="mono text-xs md:text-sm text-foreground/40">2026</p>
         </div>
       </footer>

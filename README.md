@@ -1,4 +1,4 @@
-# Clickshare - Digital Business Cards
+# Flick - Digital Business Cards
 
 A modern, responsive Next.js application for creating and sharing digital business cards with QR codes, vCard downloads, and analytics.
 

@@ -368,7 +368,7 @@ END:VCARD`
         </div>
 
         <p className="text-center mono text-xs text-foreground/30 mt-4 md:mt-6">
-          MADE WITH CLICKSHARE
+          MADE WITH FLICK
         </p>
       </div>
     </div>
