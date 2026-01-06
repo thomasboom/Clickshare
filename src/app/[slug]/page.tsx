@@ -1,5 +1,7 @@
 'use client'
 
+import Image from 'next/image'
+
 import { useEffect, useState } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 import { Mail, Phone, Globe, Linkedin, Twitter, Github, Instagram, Download, Share2, Edit, Lock, MessageCircle, Send, MessageSquare, Users, QrCode } from 'lucide-react'
@@ -138,10 +140,11 @@ END:VCARD`
           <div className="h-28 md:h-32 bg-foreground/5 flex items-end p-4 md:p-6">
             <div className="w-16 h-16 md:w-20 md:h-20 rounded-full border-4 border-background bg-foreground/10 -mb-8 md:-mb-10 overflow-hidden">
               {profile.profile_image ? (
-                <img
+                <Image
                   src={profile.profile_image}
                   alt={profile.full_name}
-                  className="w-full h-full object-cover"
+                  fill
+                  className="object-cover"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-2xl md:text-3xl font-bold">

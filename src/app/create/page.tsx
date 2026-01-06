@@ -1,5 +1,7 @@
 'use client'
 
+import Image from 'next/image'
+
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { getSupabaseClient } from '@/lib/supabase'
@@ -146,7 +148,7 @@ export default function CreateCard() {
               <div className="relative mb-4">
                 <div className="w-24 h-24 md:w-28 md:h-28 rounded-full overflow-hidden bg-foreground/5 border-2 border-foreground flex items-center justify-center">
                   {previewImage ? (
-                    <img src={previewImage} alt="Preview" className="w-full h-full object-cover" />
+                    <Image src={previewImage} alt="Preview" fill className="object-cover" />
                   ) : (
                     <span className="text-4xl md:text-5xl font-black text-foreground/20">?</span>
                   )}
