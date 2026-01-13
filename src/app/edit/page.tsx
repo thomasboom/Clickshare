@@ -4,19 +4,20 @@ import Image from 'next/image'
 
 import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { getSupabaseClient } from '@/lib/supabase'
+import { useQuery, useMutation } from 'convex/react'
+import { api } from '@/convex/_generated/api'
 import { Upload } from 'lucide-react'
 import Link from 'next/link'
-import { Profile } from '@/types'
 
 function EditCardContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const token = searchParams.get('token')
-  const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [profile, setProfile] = useState<Profile | null>(null)
+  const updateProfile = useMutation(api.profiles.update)
+  const generateUploadUrl = useMutation(api.profileImages.generateUploadUrl)
+  const profileData = useQuery(api.profiles.getByEditToken, token ? { editToken: token } : "skip")
+
   const [formData, setFormData] = useState({
     full_name: '',
     job_title: '',
@@ -39,58 +40,28 @@ function EditCardContent() {
   const [previewImage, setPreviewImage] = useState<string | null>(null)
 
   useEffect(() => {
-    async function fetchProfile() {
-      const supabase = getSupabaseClient()
-
-      if (!supabase) {
-        setError('Please configure Supabase environment variables')
-        setLoading(false)
-        return
-      }
-
-      if (!token) {
-        setError('Invalid edit link')
-        setLoading(false)
-        return
-      }
-
-      const { data } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('edit_token', token)
-        .single()
-
-      if (!data) {
-        setError('Profile not found or invalid edit link')
-        setLoading(false)
-        return
-      }
-
-      setProfile(data)
+    if (profileData) {
       setFormData({
-        full_name: data.full_name,
-        job_title: data.job_title,
-        company: data.company,
-        bio: data.bio,
-        email: data.email,
-        phone: data.phone,
-        website: data.website || '',
-        linkedin: data.social_links?.linkedin || '',
-        twitter: data.social_links?.twitter || '',
-        github: data.social_links?.github || '',
-        instagram: data.social_links?.instagram || '',
-        mastodon: data.social_links?.mastodon || '',
-        bluesky: data.social_links?.bluesky || '',
-        whatsapp: data.social_links?.whatsapp || '',
-        signal: data.social_links?.signal || '',
-        telegram: data.social_links?.telegram || '',
+        full_name: profileData.full_name,
+        job_title: profileData.job_title,
+        company: profileData.company,
+        bio: profileData.bio,
+        email: profileData.email,
+        phone: profileData.phone,
+        website: profileData.website || '',
+        linkedin: profileData.social_links?.linkedin || '',
+        twitter: profileData.social_links?.twitter || '',
+        github: profileData.social_links?.github || '',
+        instagram: profileData.social_links?.instagram || '',
+        mastodon: profileData.social_links?.mastodon || '',
+        bluesky: profileData.social_links?.bluesky || '',
+        whatsapp: profileData.social_links?.whatsapp || '',
+        signal: profileData.social_links?.signal || '',
+        telegram: profileData.social_links?.telegram || '',
       })
-      setPreviewImage(data.profile_image)
-      setLoading(false)
+      setPreviewImage(profileData.profile_image || null)
     }
-
-    fetchProfile()
-  }, [token])
+  }, [profileData])
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -104,67 +75,54 @@ function EditCardContent() {
     e.preventDefault()
     setSaving(true)
 
-    const supabase = getSupabaseClient()
-
-    if (!supabase) {
-      alert('Please configure Supabase environment variables')
+    if (!profileData) {
+      alert('Profile not found')
       setSaving(false)
       return
     }
 
     try {
-      let imageUrl = profile?.profile_image
+      let imageUrl = profileData.profile_image
 
       if (profileImage) {
-        const fileExt = profileImage.name.split('.').pop()
-        const fileName = `${Math.random()}.${fileExt}`
-        const { error: uploadError } = await supabase.storage
-          .from('profiles')
-          .upload(fileName, profileImage)
+        const { uploadUrl, storageId } = await generateUploadUrl()
 
-        if (uploadError) throw uploadError
-
-        const { data: { publicUrl } } = supabase.storage
-          .from('profiles')
-          .getPublicUrl(fileName)
-
-        imageUrl = publicUrl
-      }
-
-      if (!profile) {
-        alert('Profile not found')
-        setSaving(false)
-        return
-      }
-
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({
-          full_name: formData.full_name,
-          job_title: formData.job_title,
-          company: formData.company,
-          bio: formData.bio,
-          email: formData.email,
-          phone: formData.phone,
-          website: formData.website || null,
-          profile_image: imageUrl,
-          social_links: {
-            linkedin: formData.linkedin || undefined,
-            twitter: formData.twitter || undefined,
-            github: formData.github || undefined,
-            instagram: formData.instagram || undefined,
-            mastodon: formData.mastodon || undefined,
-            bluesky: formData.bluesky || undefined,
-            whatsapp: formData.whatsapp || undefined,
-            signal: formData.signal || undefined,
-            telegram: formData.telegram || undefined,
-          },
+        const uploadRes = await fetch(uploadUrl, {
+          method: 'PUT',
+          body: profileImage,
         })
-        .eq('id', profile.id)
 
-      if (updateError) throw updateError
+        if (!uploadRes.ok) {
+          throw new Error('Failed to upload image')
+        }
 
-      router.push(`/${profile.slug}`)
+        imageUrl = storageId
+      }
+
+      await updateProfile({
+        id: profileData._id,
+        full_name: formData.full_name,
+        job_title: formData.job_title,
+        company: formData.company,
+        bio: formData.bio,
+        email: formData.email,
+        phone: formData.phone,
+        website: formData.website || undefined,
+        profile_image: imageUrl || undefined,
+        social_links: {
+          linkedin: formData.linkedin || undefined,
+          twitter: formData.twitter || undefined,
+          github: formData.github || undefined,
+          instagram: formData.instagram || undefined,
+          mastodon: formData.mastodon || undefined,
+          bluesky: formData.bluesky || undefined,
+          whatsapp: formData.whatsapp || undefined,
+          signal: formData.signal || undefined,
+          telegram: formData.telegram || undefined,
+        },
+      })
+
+      router.push(`/${profileData.slug}`)
     } catch (error) {
       console.error('Error updating profile:', error)
       alert('Error updating profile. Please try again.')
@@ -173,20 +131,12 @@ function EditCardContent() {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="mono text-sm text-foreground/40">loading...</div>
-      </div>
-    )
-  }
-
-  if (error) {
+  if (!profileData && !token) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background px-6">
         <div className="text-center">
           <div className="display-text mb-4">ERROR</div>
-          <p className="body-text text-foreground/50 mb-8">{error}</p>
+          <p className="body-text text-foreground/50 mb-8">Invalid edit link</p>
           <Link
             href="/"
             className="inline-block px-8 py-3 bg-foreground text-background font-bold text-sm"
@@ -198,11 +148,19 @@ function EditCardContent() {
     )
   }
 
+  if (!profileData) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="mono text-sm text-foreground/40">loading...</div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen py-6 px-3 md:py-12 md:px-4">
       <div className="max-w-2xl mx-auto">
         <Link
-          href={`/${profile?.slug}`}
+          href={`/${profileData.slug}`}
           className="inline-flex items-center gap-2 text-xs md:text-sm mono text-foreground/40 hover:text-foreground transition-colors mb-6 md:mb-8"
         >
           <span className="w-8 h-8 border border-foreground/20 flex items-center justify-center">←</span>
@@ -241,7 +199,7 @@ function EditCardContent() {
                   <span className="px-3 py-3 md:px-4 md:py-3 font-mono text-sm text-foreground/40">/</span>
                   <input
                     type="text"
-                    value={profile?.slug}
+                    value={profileData.slug}
                     disabled
                     className="flex-1 px-2 py-3 md:px-2 md:py-3 bg-transparent font-mono text-sm focus:outline-none opacity-50"
                   />

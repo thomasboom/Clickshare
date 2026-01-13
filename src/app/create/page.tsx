@@ -4,12 +4,15 @@ import Image from 'next/image'
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { getSupabaseClient } from '@/lib/supabase'
+import { useMutation } from 'convex/react'
+import { api } from '@/convex/_generated/api'
 import { Upload, Plus } from 'lucide-react'
 import Link from 'next/link'
 
 export default function CreateCard() {
   const router = useRouter()
+  const createProfile = useMutation(api.profiles.create)
+  const generateUploadUrl = useMutation(api.profileImages.generateUploadUrl)
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     full_name: '',
@@ -54,69 +57,50 @@ export default function CreateCard() {
     e.preventDefault()
     setLoading(true)
 
-    const supabase = getSupabaseClient()
-
-    if (!supabase) {
-      alert('Please configure Supabase environment variables')
-      setLoading(false)
-      return
-    }
-
     try {
       let imageUrl = null
 
       if (profileImage) {
-        const fileExt = profileImage.name.split('.').pop()
-        const fileName = `${Math.random()}.${fileExt}`
-        const { error: uploadError } = await supabase.storage
-          .from('profiles')
-          .upload(fileName, profileImage)
+        const { uploadUrl, storageId } = await generateUploadUrl()
 
-        if (uploadError) throw uploadError
+        const uploadRes = await fetch(uploadUrl, {
+          method: 'PUT',
+          body: profileImage,
+        })
 
-        const { data: { publicUrl } } = supabase.storage
-          .from('profiles')
-          .getPublicUrl(fileName)
+        if (!uploadRes.ok) {
+          throw new Error('Failed to upload image')
+        }
 
-        imageUrl = publicUrl
+        imageUrl = storageId
       }
 
       const editToken = generateEditToken()
 
-      const { error: insertError } = await supabase
-        .from('profiles')
-        .insert([
-          {
-            full_name: formData.full_name,
-            job_title: formData.job_title,
-            company: formData.company,
-            bio: formData.bio,
-            email: formData.email,
-            phone: formData.phone,
-            website: formData.website || null,
-            slug: formData.slug.toLowerCase().replace(/\s+/g, '-'),
-            profile_image: imageUrl,
-            social_links: {
-              linkedin: formData.linkedin || undefined,
-              twitter: formData.twitter || undefined,
-              github: formData.github || undefined,
-              instagram: formData.instagram || undefined,
-              mastodon: formData.mastodon || undefined,
-              bluesky: formData.bluesky || undefined,
-              whatsapp: formData.whatsapp || undefined,
-              signal: formData.signal || undefined,
-              telegram: formData.telegram || undefined,
-            },
-            custom_theme: {},
-            visits: 0,
-            qr_code_scans: 0,
-            edit_token: editToken,
-          },
-        ])
-        .select()
-        .single()
-
-      if (insertError) throw insertError
+      await createProfile({
+        full_name: formData.full_name,
+        job_title: formData.job_title,
+        company: formData.company,
+        bio: formData.bio,
+        email: formData.email,
+        phone: formData.phone,
+        website: formData.website || undefined,
+        slug: formData.slug.toLowerCase().replace(/\s+/g, '-'),
+        profile_image: imageUrl,
+        social_links: {
+          linkedin: formData.linkedin || undefined,
+          twitter: formData.twitter || undefined,
+          github: formData.github || undefined,
+          instagram: formData.instagram || undefined,
+          mastodon: formData.mastodon || undefined,
+          bluesky: formData.bluesky || undefined,
+          whatsapp: formData.whatsapp || undefined,
+          signal: formData.signal || undefined,
+          telegram: formData.telegram || undefined,
+        },
+        custom_theme: {},
+        edit_token: editToken,
+      })
 
       router.push(`/${formData.slug}?edit_token=${editToken}`)
     } catch (error) {

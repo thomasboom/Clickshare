@@ -1,11 +1,11 @@
 'use client'
 
 import Image from 'next/image'
-
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 import { Mail, Phone, Globe, Linkedin, Twitter, Github, Instagram, Download, Share2, Edit, Lock, MessageCircle, Send, MessageSquare, Users, QrCode } from 'lucide-react'
-import { getSupabaseClient } from '@/lib/supabase'
+import { useQuery, useMutation } from 'convex/react'
+import { api } from '@/convex/_generated/api'
 import { Profile } from '@/types'
 import { useParams, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
@@ -14,13 +14,15 @@ export default function BusinessCard() {
   const params = useParams()
   const searchParams = useSearchParams()
   const editToken = searchParams.get('edit_token')
-  const [profile, setProfile] = useState<Profile | null>(null)
-  const [loading, setLoading] = useState(true)
+  const slug = params.slug as string
   const [showQR, setShowQR] = useState(false)
   const [editLinkCopied, setEditLinkCopied] = useState(false)
   const [shareLinkCopied, setShareLinkCopied] = useState(false)
   const [origin, setOrigin] = useState('')
-  const slug = params.slug as string
+
+  const profileData = useQuery(api.profiles.getBySlug, slug ? { slug } : "skip")
+  const incrementVisits = useMutation(api.profiles.incrementVisits)
+  const visitedRef = React.useRef(false)
 
   useEffect(() => {
     // Workaround for SSR hydration - origin is only available on client
@@ -29,64 +31,39 @@ export default function BusinessCard() {
   }, [])
 
   useEffect(() => {
-    async function fetchProfile() {
-      const supabase = getSupabaseClient()
-
-      if (!supabase) {
-        setLoading(false)
-        return
-      }
-
-      const { data } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('slug', slug)
-        .single()
-
-      if (data) {
-        setProfile(data)
-
-        await supabase
-          .from('profiles')
-          .update({ visits: (data.visits || 0) + 1 })
-          .eq('id', data.id)
-      }
-
-      setLoading(false)
+    if (profileData && !visitedRef.current) {
+      visitedRef.current = true
+      incrementVisits({ id: profileData._id })
     }
-
-    if (slug) {
-      fetchProfile()
-    }
-  }, [slug])
+  }, [profileData, incrementVisits])
 
   const copyEditLink = () => {
-    if (!profile?.edit_token) return
-    const editLink = `${origin}/edit?token=${profile.edit_token}`
+    if (!profileData?.edit_token) return
+    const editLink = `${origin}/edit?token=${profileData.edit_token}`
     navigator.clipboard.writeText(editLink)
     setEditLinkCopied(true)
     setTimeout(() => setEditLinkCopied(false), 2000)
   }
 
   const downloadVCard = () => {
-    if (!profile) return
+    if (!profileData) return
 
     const vcard = `BEGIN:VCARD
 VERSION:3.0
-FN:${profile.full_name}
-TITLE:${profile.job_title}
-ORG:${profile.company}
-EMAIL:${profile.email}
-TEL:${profile.phone}
-URL:${profile.website || ''}
-NOTE:${profile.bio}
+FN:${profileData.full_name}
+TITLE:${profileData.job_title}
+ORG:${profileData.company}
+EMAIL:${profileData.email}
+TEL:${profileData.phone}
+URL:${profileData.website || ''}
+NOTE:${profileData.bio}
 END:VCARD`
 
     const blob = new Blob([vcard], { type: 'text/vcard' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `${profile.full_name.replace(/\s+/g, '_')}.vcf`
+    a.download = `${profileData.full_name.replace(/\s+/g, '_')}.vcf`
     a.click()
     URL.revokeObjectURL(url)
   }
@@ -98,15 +75,7 @@ END:VCARD`
     setTimeout(() => setShareLinkCopied(false), 2000)
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="mono text-sm text-foreground/40">loading...</div>
-      </div>
-    )
-  }
-
-  if (!profile) {
+  if (!profileData && !slug) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background px-6">
         <div className="text-center">
@@ -121,6 +90,33 @@ END:VCARD`
         </div>
       </div>
     )
+  }
+
+  if (!profileData) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="mono text-sm text-foreground/40">loading...</div>
+      </div>
+    )
+  }
+
+  const profile: Profile = {
+    id: profileData._id,
+    created_at: profileData._creationTime.toString(),
+    full_name: profileData.full_name,
+    job_title: profileData.job_title,
+    company: profileData.company,
+    profile_image: profileData.profile_image || null,
+    bio: profileData.bio,
+    email: profileData.email,
+    phone: profileData.phone,
+    website: profileData.website || null,
+    social_links: profileData.social_links || {},
+    custom_theme: profileData.custom_theme || {},
+    slug: profileData.slug,
+    qr_code_scans: profileData.qr_code_scans,
+    visits: profileData.visits,
+    edit_token: profileData.edit_token,
   }
 
   const socialLinks = profile.social_links || {}
